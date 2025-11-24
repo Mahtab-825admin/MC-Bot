@@ -1,0 +1,11 @@
+{
+  "name": "mc-bot",
+  "version": "1.0.0",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "minecraft-protocol": "^1.34.0"
+  }
+}
