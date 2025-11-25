@@ -6,6 +6,6 @@
     "start": "node bot.js"
   },
   "dependencies": {
-    "minecraft-protocol": "^1.34.0"
+    "mineflayer": "^4.3.1"
   }
 }
