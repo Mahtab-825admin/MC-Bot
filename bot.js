@@ -49,15 +49,15 @@ function startBot() {
 
   // AUTO RECONNECT ON END
   client.on('end', () => {
-    console.log('⚠️ Disconnected. Reconnecting in 5s...');
-    setTimeout(startBot, 5000);
+    console.log('⚠️ Disconnected. Reconnecting in 30s...');
+    setTimeout(startBot, 30000);
   });
 
   // AUTO RECONNECT ON ERROR
   client.on('error', (err) => {
     console.log('❌ Connection error:', err.message);
-    console.log('⚠️ Reconnecting in 5s...');
-    setTimeout(startBot, 5000);
+    console.log('⚠️ Reconnecting in 30s...');
+    setTimeout(startBot, 30000);
   });
 }
 
