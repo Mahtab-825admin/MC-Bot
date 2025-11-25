@@ -2,7 +2,7 @@ const mc = require('minecraft-protocol');
 const http = require('http');
 const config = require('./config.json');
 
-const BOT_USERNAME = 'BotUsername'; // Change to your bot's username
+const BOT_USERNAME = 'LifestealGo'; // Change to your bot's username
 
 // Function to start the Minecraft bot
 function startBot() {
