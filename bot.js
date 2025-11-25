@@ -2,7 +2,7 @@ const mc = require('minecraft-protocol');
 const http = require('http');
 const config = require('./config.json');
 
-const BOT_USERNAME = 'LifestealGo'; // change this
+const BOT_USERNAME = 'LifestealGo'; // Change to your bot's username
 
 let client;
 
@@ -19,23 +19,27 @@ function startBot() {
     client.chat('Hello! I am your 24/7 AFK bot!');
   });
 
-  // AUTO JUMP EVERY 60 SECONDS
-  setInterval(() => {
-    if (!client) return;
+  // Wait until the bot entity spawns before starting auto-jump
+  client.on('spawn', () => {
+    console.log('🟢 Bot entity ready, starting auto-jump...');
 
-    try {
-      console.log("⬆️ Jumping...");
-      client.write('position', {
-        x: client.entity.position.x,
-        y: client.entity.position.y + 0.5, // slight jump
-        z: client.entity.position.z,
-        onGround: false
-      });
-    } catch (err) {
-      console.log("⚠️ Jump error:", err.message);
-    }
+    // AUTO JUMP EVERY 30 SECONDS
+    setInterval(() => {
+      if (!client.entity) return; // ensure entity exists
 
-  }, 60000); // 1 minute = 60000 ms
+      try {
+        console.log('⬆️ Jumping...');
+        client.write('position', {
+          x: client.entity.position.x,
+          y: client.entity.position.y + 0.5,
+          z: client.entity.position.z,
+          onGround: false
+        });
+      } catch (err) {
+        console.log('⚠️ Jump error:', err.message);
+      }
+    }, 30000); // 30 seconds
+  });
 
   // CHAT LOG
   client.on('chat', (packet) => {
