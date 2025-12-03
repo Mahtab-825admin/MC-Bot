@@ -14,6 +14,7 @@ function startBot() {
   console.log('Starting bot...');
   bot = mineflayer.createBot({
     host: config.serverIp,
+    port: config.serverPort || 25565,
     username: BOT_USERNAME,
     // version: false // optional: specify a version string if needed, e.g. "1.20.4"
   });
