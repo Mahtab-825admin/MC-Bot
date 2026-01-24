@@ -31,7 +31,22 @@ function startBot() {
       clearInterval(movementInterval);
       movementInterval = null;
     }
+    
+    bot.once('spawn', () => {
+  setTimeout(() => {
+    // Try login first (most servers require login on join)
+    bot.chat(`/login ${config.password}`);
+    console.log("🔐 Sent /login command");
 
+    // Also send /register for first join (server will ignore it if already registered)
+    setTimeout(() => {
+      bot.chat(`/register ${config.password} ${config.password}`);
+      console.log("🆕 Sent /register command");
+    }, 2000);
+
+  }, 2000); // wait 2s for server messages
+});
+    
     // Movement pattern:
     // - Move right for 1s
     // - Move left for 1s
