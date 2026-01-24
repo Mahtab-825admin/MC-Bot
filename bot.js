@@ -1,125 +1,129 @@
-// bot.js
 const mineflayer = require('mineflayer');
 const http = require('http');
 const config = require('./config.json');
 
-const BOT_USERNAME = 'LifestealGo'; // change if needed
-const RECONNECT_DELAY = 30000; // 30s
-const MOVE_CYCLE_MS = 3000; // full left->right->jump cycle length
+const RECONNECT_DELAY = 30000; // 30 seconds
+const MOVE_CYCLE_MS = 3000;
 
 let bot = null;
 let movementInterval = null;
 
 function startBot() {
-  console.log('Starting bot...');
+  console.log('🚀 Starting bot...');
+
   bot = mineflayer.createBot({
     host: config.serverIp,
     port: config.serverPort || 25565,
-    username: BOT_USERNAME,
-    // version: false // optional: specify a version string if needed, e.g. "1.20.4"
+    username: config.username
   });
 
   bot.on('login', () => {
-    console.log('✅ Bot logged in successfully!');
+    console.log('✅ Logged in to Minecraft server');
   });
 
-  bot.on('spawn', () => {
-    console.log('🟢 Bot spawned — starting continuous movement loop');
+  bot.once('spawn', () => {
+    console.log('🟢 Spawned');
 
-    // Make sure any old interval is cleared
-    if (movementInterval) {
-      clearInterval(movementInterval);
-      movementInterval = null;
+    // 🔐 Auto register / login
+    setTimeout(() => {
+      bot.chat(`/register ${config.password} ${config.password}`);
+      bot.chat(`/login ${config.password}`);
+      console.log('🔐 Sent register/login');
+    }, 2000);
+
+    startMovement();
+  });
+
+  // 📩 Chat listener (auth detection)
+  bot.on('chat', (username, message) => {
+    const msg = message.toLowerCase();
+
+    if (msg.includes('register')) {
+      bot.chat(`/register ${config.password} ${config.password}`);
+      console.log('📝 Registering...');
     }
 
-    // Movement pattern:
-    // - Move right for 1s
-    // - Move left for 1s
-    // - Jump once (and stop moving for a short moment) then repeat
+    if (msg.includes('login')) {
+      bot.chat(`/login ${config.password}`);
+      console.log('🔑 Logging in...');
+    }
+
+    console.log(`💬 ${username}: ${message}`);
+  });
+
+  // 🏃 Continuous movement (anti-AFK)
+  function startMovement() {
+    if (movementInterval) clearInterval(movementInterval);
+
     movementInterval = setInterval(() => {
-      if (!bot.entity) return;
+      if (!bot || !bot.entity) return;
 
       try {
         // move right
         bot.setControlState('right', true);
         bot.setControlState('left', false);
-        bot.setControlState('forward', false);
-        bot.setControlState('back', false);
 
         setTimeout(() => {
-          // stop right, move left
+          // move left
           bot.setControlState('right', false);
           bot.setControlState('left', true);
         }, 1000);
 
         setTimeout(() => {
-          // stop left and do a jump
+          // jump
           bot.setControlState('left', false);
-
-          // make the bot jump for ~500ms
           bot.setControlState('jump', true);
           setTimeout(() => bot.setControlState('jump', false), 500);
         }, 2000);
 
-      } catch (err) {
-        console.log('⚠️ Movement error (interval):', err.message);
+      } catch (e) {
+        console.log('⚠️ Movement error:', e.message);
       }
     }, MOVE_CYCLE_MS);
-  });
+  }
 
-  // Log chat to console (safe parsing)
-  bot.on('chat', (username, message) => {
-    console.log('💬', username + ':', message);
-  });
-
-  // Clean up and reconnect logic
-  function cleanupAndReconnect() {
+  // 🔁 Cleanup + reconnect
+  function reconnect() {
     try {
-      if (movementInterval) {
-        clearInterval(movementInterval);
-        movementInterval = null;
-      }
-    } catch (e) { /* ignore */ }
+      if (movementInterval) clearInterval(movementInterval);
+      movementInterval = null;
+    } catch {}
 
-    // Destroy old bot to free resources
     try {
-      if (bot && bot.quit) bot.quit(); // graceful quit if possible
-    } catch (e) { /* ignore */ }
+      if (bot) bot.quit();
+    } catch {}
+
     bot = null;
 
-    console.log(`⚠️ Reconnecting in ${RECONNECT_DELAY / 1000}s...`);
+    console.log(`🔁 Reconnecting in ${RECONNECT_DELAY / 1000}s...`);
     setTimeout(startBot, RECONNECT_DELAY);
   }
 
   bot.on('end', () => {
-    console.log('⚠️ Bot disconnected (end).');
-    cleanupAndReconnect();
+    console.log('⚠️ Disconnected');
+    reconnect();
   });
 
-  bot.on('kicked', (reason, loggedIn) => {
-    console.log('⚠️ Bot kicked:', reason, 'loggedIn:', loggedIn);
-    cleanupAndReconnect();
+  bot.on('kicked', (reason) => {
+    console.log('🚫 Kicked:', reason);
+    reconnect();
   });
 
   bot.on('error', (err) => {
-    console.log('❌ Bot error:', err && err.message ? err.message : err);
-    cleanupAndReconnect();
+    console.log('❌ Error:', err.message || err);
+    reconnect();
   });
 }
 
-// Start bot
+// ▶️ Start bot
 startBot();
 
-// Simple HTTP server for Render / UptimeRobot health checks
+// 🌐 Health server (Render + UptimeRobot)
 const PORT = process.env.PORT || 3000;
 http.createServer((req, res) => {
-  let uptimeStatus = 'offline';
-  try {
-    if (bot && bot.entity) uptimeStatus = 'online';
-  } catch (e) { uptimeStatus = 'unknown'; }
-
+  const status = bot && bot.entity ? 'online' : 'offline';
   res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end(`Minecraft bot status: ${uptimeStatus}\n`);
+  res.end(`Minecraft bot status: ${status}\n`);
 }).listen(PORT, () => {
-  console.log(`🌐 Health server listening on port ${PORT}`);
+  console.log(`🌐 Health server running on port ${PORT}`);
 });
